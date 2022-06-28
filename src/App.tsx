@@ -56,7 +56,11 @@ const doneList: Task[] = [
   },
 ]
 
-const TaskItem: Component<Task> = props => {
+type TaskItemProps = Task & {
+  onUpdateStatus: (toBe: Task['status'], id: Task['id']) => void
+}
+
+const TaskItem: Component<TaskItemProps> = props => {
   return (
     <div>
       <p>
@@ -86,16 +90,28 @@ const TaskItem: Component<Task> = props => {
             <br />
             <button
               onClick={() => {
-                console.log('yo')
+                props.onUpdateStatus('wip', props.id)
               }}
             >
               wip
             </button>
-            <button onClick={() => {}}>done</button>
+            <button
+              onClick={() => {
+                props.onUpdateStatus('done', props.id)
+              }}
+            >
+              done
+            </button>
           </Match>
           <Match when={props.status === 'wip'}>
             <br />
-            <button>done</button>
+            <button
+              onClick={() => {
+                props.onUpdateStatus('done', props.id)
+              }}
+            >
+              done
+            </button>
           </Match>
         </Switch>
       </p>
@@ -103,17 +119,21 @@ const TaskItem: Component<Task> = props => {
   )
 }
 
-const TaskItemList: Component<{ list: Task[] }> = props => {
+type TaskItemListProps = { list: Task[]; onUpdateStatus: TaskItemProps['onUpdateStatus'] }
+
+const TaskItemList: Component<TaskItemListProps> = props => {
   return (
     <For each={props.list}>
       {item => {
-        return <TaskItem {...item} />
+        return <TaskItem {...item} onUpdateStatus={props.onUpdateStatus} />
       }}
     </For>
   )
 }
 
-const AddTaskForm: Component<{ onClick: (text: string) => void }> = props => {
+type AddTaskFormProps = { onClick: (text: string) => void }
+
+const AddTaskForm: Component<AddTaskFormProps> = props => {
   const [text, setText] = createSignal('')
 
   return (
@@ -146,12 +166,9 @@ const App: Component = () => {
     todoList,
     wipList,
     doneList,
-    hoge: {
-      fuga: 1,
-    },
   })
 
-  const handle = (text: string) => {
+  const handleAddTask = (text: string) => {
     setStore('todoList', prev => {
       const _todoList: Task[] = [
         ...prev,
@@ -159,30 +176,48 @@ const App: Component = () => {
       ]
       return _todoList
     })
-    console.log('handle')
+  }
+
+  const handleUpdateStatus = (toBe: Task['status'], id: Task['id']) => {
+    const all = [...state.todoList, ...state.wipList, ...state.doneList].map(v => {
+      if (v.id !== id) {
+        return v
+      }
+
+      return {
+        ...v,
+        status: toBe,
+      }
+    })
+
+    setStore({
+      todoList: all.filter(v => v.status === 'todo'),
+      wipList: all.filter(v => v.status === 'wip'),
+      doneList: all.filter(v => v.status === 'done'),
+    })
   }
 
   return (
     <div class={styles.app}>
       <header>
-        <h1>Mini Todo {state.hoge.fuga}</h1>
+        <h1>Mini Todo</h1>
       </header>
       <main>
         <div>
           <h2>Add A Task</h2>
-          <AddTaskForm onClick={handle} />
+          <AddTaskForm onClick={handleAddTask} />
         </div>
         <div>
           <h2>Todo List</h2>
-          <TaskItemList list={state.todoList} />
+          <TaskItemList list={state.todoList} onUpdateStatus={handleUpdateStatus} />
         </div>
         <div>
           <h2>Wip List</h2>
-          <TaskItemList list={state.wipList} />
+          <TaskItemList list={state.wipList} onUpdateStatus={handleUpdateStatus} />
         </div>
         <div>
           <h2>Done List</h2>
-          <TaskItemList list={state.doneList} />
+          <TaskItemList list={state.doneList} onUpdateStatus={handleUpdateStatus} />
         </div>
       </main>
     </div>
