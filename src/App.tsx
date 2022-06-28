@@ -1,4 +1,4 @@
-import { Component, For, Show, Switch, Match } from 'solid-js'
+import { Component, For, Show, Switch, Match, createSignal } from 'solid-js'
 import { createStore } from 'solid-js/store'
 
 import styles from './App.module.css'
@@ -113,22 +113,32 @@ const TaskItemList: Component<{ list: Task[] }> = props => {
   )
 }
 
-const AddTaskForm: Component<{ onClick: (id: string) => void }> = ({ onClick }) => {
+const AddTaskForm: Component<{ onClick: (text: string) => void }> = props => {
+  const [text, setText] = createSignal('')
+
   return (
     <>
+      <input
+        type="text"
+        placeholder="todo"
+        value={text()}
+        onInput={e => {
+          setText((e.target as HTMLInputElement).value)
+        }}
+      />
       <button
         onClick={() => {
-          onClick('6')
+          const t = text().trim()
+
+          props.onClick(t)
+
+          setText('')
         }}
       >
         add
       </button>
     </>
   )
-}
-
-const Pu: Component<{ fuga: number }> = props => {
-  return <p>{props.fuga}</p>
 }
 
 const App: Component = () => {
@@ -141,11 +151,14 @@ const App: Component = () => {
     },
   })
 
-  const handle = () => {
-    setStore('hoge', 'fuga', prev => {
-      return prev + 1
+  const handle = (text: string) => {
+    setStore('todoList', prev => {
+      const _todoList: Task[] = [
+        ...prev,
+        { id: new Date().toISOString(), taskText: text, status: 'todo' },
+      ]
+      return _todoList
     })
-    setStore('todoList', 0, 'taskText', 'updated')
     console.log('handle')
   }
 
@@ -153,7 +166,6 @@ const App: Component = () => {
     <div class={styles.app}>
       <header>
         <h1>Mini Todo {state.hoge.fuga}</h1>
-        <Pu fuga={state.hoge.fuga} />
       </header>
       <main>
         <div>
